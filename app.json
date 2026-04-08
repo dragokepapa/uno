@@ -1,0 +1,24 @@
+{
+  "name": "Mau Mau Bot - UNO Telegram Game",
+  "description": "Play Mau Mau / UNO with friends in Telegram groups",
+  "keywords": ["telegram", "bot", "uno", "maumau", "game"],
+  "website": "https://github.com/jh0ker/mau_mau_bot",
+  "repository": "https://github.com/jh0ker/mau_mau_bot",
+  "logo": "https://raw.githubusercontent.com/jh0ker/mau_mau_bot/master/logo.png",
+  "env": {
+    "TOKEN": {
+      "description": "Get from @BotFather",
+      "required": true
+    },
+    "HEROKU_APP_NAME": {
+      "description": "Your Heroku app name (e.g. my-uno-bot)",
+      "required": true
+    }
+  },
+  "buildpacks": [{"url": "heroku/python"}],
+  "formation": {
+    "worker": {
+      "quantity": 1
+    }
+  }
+}
