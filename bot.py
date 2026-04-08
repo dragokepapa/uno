@@ -43,7 +43,7 @@ def main():
     dp.add_handler(MessageHandler(Filters.status_update.new_chat_members, new_player))
     
     # Important line - alag line mein likha hai taaki tilde safe rahe
-    text_filter = Filters.text & \~Filters.command
+    text_filter = Filters.text & ~Filters.command
     dp.add_handler(MessageHandler(text_filter, button))
 
     # === HEROKU WEBHOOK ===
