@@ -8,7 +8,7 @@ from telegram.ext import CommandHandler, MessageHandler, Filters, CallbackQueryH
 
 import config
 from actions import *
-from game_manager import game_manager
+from game_manager import gm
 from internationalization import _
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
