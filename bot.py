@@ -3,10 +3,10 @@
 #
 # Telegram bot to play UNO in group chats
 
-import os
 import logging
+import os
 from telegram.ext import Updater, InlineQueryHandler, ChosenInlineResultHandler
-from telegram.ext import CommandHandler, MessageHandler, Filters
+from telegram.ext import CommandHandler, MessageHandler, Filters, CallbackQueryHandler
 
 import config
 from actions import *
@@ -21,13 +21,13 @@ logger = logging.getLogger(__name__)
 TOKEN = config.TOKEN
 
 if not TOKEN:
-    raise ValueError("No TOKEN found! Set it in Heroku Config Vars.")
+    raise ValueError("No TOKEN found! Please set TOKEN in Heroku Config Vars.")
 
 def main():
     updater = Updater(token=TOKEN, use_context=True)
     dp = updater.dispatcher
 
-    # Register handlers (original logic kept)
+    # === All Handlers (from original bot) ===
     dp.add_handler(CommandHandler("start", start_game))
     dp.add_handler(CommandHandler("help", help_handler))
     dp.add_handler(CommandHandler("new", new_game))
@@ -43,11 +43,12 @@ def main():
 
     dp.add_handler(InlineQueryHandler(inline_query))
     dp.add_handler(ChosenInlineResultHandler(chosen_inline_result))
+    dp.add_handler(CallbackQueryHandler(button))   # Important for card buttons
 
     dp.add_handler(MessageHandler(Filters.status_update.new_chat_members, new_player))
-    dp.add_handler(MessageHandler(Filters.text & \~Filters.command, button))
+    dp.add_handler(MessageHandler(Filters.text & \~Filters.command, button))  # Fixed line
 
-    # === HEROKU WEBHOOK SETUP ===
+    # === HEROKU WEBHOOK (Critical) ===
     if __name__ == '__main__':
         port = int(os.environ.get("PORT", 8443))
         app_name = os.environ.get("HEROKU_APP_NAME")
@@ -60,11 +61,11 @@ def main():
                 url_path=TOKEN,
                 webhook_url=webhook_url
             )
-            logger.info(f"✅ Webhook started: {webhook_url}")
+            logger.info(f"✅ Webhook started → {webhook_url}")
         else:
-            # Local fallback
+            # Local testing
             updater.start_polling()
-            logger.info("🚀 Running in polling mode (local)")
+            logger.info("🚀 Running locally with polling")
 
         updater.idle()
 
