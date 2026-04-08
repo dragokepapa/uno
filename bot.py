@@ -11,20 +11,18 @@ from actions import *
 from game_manager import game_manager
 from internationalization import _
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level=logging.INFO)
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 TOKEN = config.TOKEN
 
 if not TOKEN:
-    raise ValueError("No TOKEN found! Set it in Heroku Config Vars.")
+    raise ValueError("TOKEN Heroku Config Vars mein daalo!")
 
 def main():
     updater = Updater(token=TOKEN, use_context=True)
     dp = updater.dispatcher
 
-    # Command Handlers
     dp.add_handler(CommandHandler("start", start_game))
     dp.add_handler(CommandHandler("help", help_handler))
     dp.add_handler(CommandHandler("new", new_game))
@@ -38,32 +36,25 @@ def main():
     dp.add_handler(CommandHandler("close", close_lobby))
     dp.add_handler(CommandHandler("lang", select_language))
 
-    # Inline & Callback
     dp.add_handler(InlineQueryHandler(inline_query))
     dp.add_handler(ChosenInlineResultHandler(chosen_inline_result))
     dp.add_handler(CallbackQueryHandler(button))
 
-    # Messages
     dp.add_handler(MessageHandler(Filters.status_update.new_chat_members, new_player))
-    dp.add_handler(MessageHandler(Filters.text & \~Filters.command, button))   # ← Corrected line
+    dp.add_handler(MessageHandler(Filters.text & \~Filters.command, button))
 
-    # === HEROKU WEBHOOK ===
+    # Heroku Webhook
     if __name__ == '__main__':
         port = int(os.environ.get("PORT", 8443))
         app_name = os.environ.get("HEROKU_APP_NAME")
 
         if app_name:
             webhook_url = f"https://{app_name}.herokuapp.com/{TOKEN}"
-            updater.start_webhook(
-                listen="0.0.0.0",
-                port=port,
-                url_path=TOKEN,
-                webhook_url=webhook_url
-            )
-            logger.info(f"✅ Webhook active: {webhook_url}")
+            updater.start_webhook(listen="0.0.0.0", port=port, url_path=TOKEN, webhook_url=webhook_url)
+            logger.info("Webhook ON ho gaya!")
         else:
             updater.start_polling()
-            logger.info("Running locally")
+            logger.info("Local polling mode")
 
         updater.idle()
 
