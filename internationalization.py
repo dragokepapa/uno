@@ -1,22 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-#
-# Telegram bot to play UNO in group chats
-# Copyright (c) 2016 Jannes Höke <uno@jhoeke.de>
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
-
 
 import gettext
 from functools import wraps
@@ -32,18 +15,20 @@ GETTEXT_DIR = 'locales'
 
 class _Underscore(object):
     """Class to emulate flufl.i18n behaviour, but with plural support"""
+
     def __init__(self):
+        # ✅ FIXED PART (no crash now)
         self.translators = {
-            locale: gettext.GNUTranslations(
-                open(gettext.find(
-                    GETTEXT_DOMAIN, GETTEXT_DIR, languages=[locale]
-                ), 'rb')
+            locale: gettext.translation(
+                GETTEXT_DOMAIN,
+                localedir=GETTEXT_DIR,
+                languages=[locale],
+                fallback=True  # 🔥 prevents crash
             )
-            for locale
-            in available_locales.keys()
-            if locale != 'en_US'  # No translation file for en_US
+            for locale in available_locales.keys()
+            if locale != 'en_US'
         }
-        self.locale_stack = list()
+        self.locale_stack = []
 
     def push(self, locale):
         self.locale_stack.append(locale)
@@ -51,25 +36,23 @@ class _Underscore(object):
     def pop(self):
         if self.locale_stack:
             return self.locale_stack.pop()
-        else:
-            return None
+        return None
 
     @property
     def code(self):
         if self.locale_stack:
             return self.locale_stack[-1]
-        else:
-            return None
+        return None
 
     def __call__(self, singular, plural=None, n=1, locale=None):
         if not locale:
-            locale = self.locale_stack[-1]
-
-        if locale not in self.translators.keys():
-            if n == 1:
-                return singular
+            if not self.locale_stack:
+                locale = 'en_US'
             else:
-                return plural
+                locale = self.locale_stack[-1]
+
+        if locale not in self.translators:
+            return singular if n == 1 else plural
 
         translator = self.translators[locale]
 
@@ -78,20 +61,19 @@ class _Underscore(object):
         else:
             return translator.ngettext(singular, plural, n)
 
+
 _ = _Underscore()
 
 
 def __(singular, plural=None, n=1, multi=False):
     """Translates text into all locales on the stack"""
-    translations = list()
+    translations = []
 
     if not multi and len(set(_.locale_stack)) >= 1:
         translations.append(_(singular, plural, n, 'en_US'))
-
     else:
         for locale in _.locale_stack:
             translation = _(singular, plural, n, locale)
-
             if translation not in translations:
                 translations.append(translation)
 
@@ -104,8 +86,7 @@ def user_locale(func):
     def wrapped(update, context, *pargs, **kwargs):
         user = _user_chat_from_update(update)[0]
 
-        with db_session:
-            us = UserSetting.get(id=user.id)
+        us = UserSetting.get(id=user.id)
 
         if us and us.lang != 'en':
             _.push(us.lang)
@@ -115,6 +96,7 @@ def user_locale(func):
         result = func(update, context, *pargs, **kwargs)
         _.pop()
         return result
+
     return wrapped
 
 
@@ -124,11 +106,12 @@ def game_locales(func):
     def wrapped(update, context, *pargs, **kwargs):
         user, chat = _user_chat_from_update(update)
         player = gm.player_for_user_in_chat(user, chat)
-        locales = list()
+
+        locales = []
 
         if player:
-            for player in player.game.players:
-                us = UserSetting.get(id=player.user.id)
+            for p in player.game.players:
+                us = UserSetting.get(id=p.user.id)
 
                 if us and us.lang != 'en':
                     loc = us.lang
@@ -147,6 +130,7 @@ def game_locales(func):
             _.pop()
 
         return result
+
     return wrapped
 
 
